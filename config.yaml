@@ -1,7 +1,7 @@
 # SLO & Error Budget Monitor configuration
 #
-# targets: public APIs being synthetically checked (no auth required by design,
-#          so no credentials are needed to monitor them)
+# targets: public APIs being synthetically checked (no credentials are required; a target can
+#          optionally send a token from an environment variable via bearer_token_env)
 # window_days: rolling window used to compute uptime % and error-budget burn
 # warn_threshold_pct: error-budget consumption % at which a proactive warning issue is filed
 # history_file: append-only JSON file the workflow commits back after each run
@@ -14,6 +14,9 @@ targets:
     expected_status: [200]
     max_latency_ms: 3000
     slo_target_pct: 99.9
+    # Authenticated with the workflow's GITHUB_TOKEN (read from the environment, never stored
+    # here). Anonymous requests to api.github.com share a rate limit and can fail with 403.
+    bearer_token_env: GITHUB_TOKEN
 
   - name: open-meteo-weather-api
     url: https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true
