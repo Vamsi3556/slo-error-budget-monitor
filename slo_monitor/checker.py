@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -24,6 +25,20 @@ class CheckResult:
     error: str | None = None
 
 
+def _auth_headers(target: dict) -> dict[str, str]:
+    """Build an optional bearer-token header for a target.
+
+    The target names an environment variable with `bearer_token_env`; the token itself never
+    lives in the config file. It is only sent over https, and if the variable is not set the
+    check simply runs unauthenticated.
+    """
+    env_name = target.get("bearer_token_env")
+    if not env_name or not str(target["url"]).lower().startswith("https://"):
+        return {}
+    token = os.environ.get(env_name)
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
 def run_check(target: dict, timeout_s: float = DEFAULT_TIMEOUT_S) -> CheckResult:
     """Perform a single synthetic HTTP check against a target definition.
 
@@ -31,6 +46,8 @@ def run_check(target: dict, timeout_s: float = DEFAULT_TIMEOUT_S) -> CheckResult
     expected codes AND the observed latency is within the configured budget. Any
     network-level failure (timeout, DNS, connection refused, ...) is recorded as a
     failed check rather than raising, so a single bad check never crashes the run.
+    A failed check always carries an `error` that says why, so the incident issue is
+    actionable.
     """
     url = target["url"]
     method = target.get("method", "GET")
@@ -39,16 +56,28 @@ def run_check(target: dict, timeout_s: float = DEFAULT_TIMEOUT_S) -> CheckResult
 
     start = time.perf_counter()
     try:
-        response = requests.request(method, url, timeout=timeout_s)
+        response = requests.request(
+            method, url, headers=_auth_headers(target), timeout=timeout_s
+        )
         latency_ms = (time.perf_counter() - start) * 1000
-        success = response.status_code in expected_status and latency_ms <= max_latency_ms
+        status_ok = response.status_code in expected_status
+        latency_ok = latency_ms <= max_latency_ms
+        error = None
+        if not status_ok:
+            error = (
+                f"unexpected status {response.status_code}, "
+                f"expected one of {sorted(expected_status)}"
+            )
+        elif not latency_ok:
+            error = f"latency {latency_ms:.0f}ms exceeded the {max_latency_ms}ms limit"
         return CheckResult(
             target=target["name"],
             url=url,
             timestamp=datetime.now(UTC).isoformat(),
             status_code=response.status_code,
             latency_ms=round(latency_ms, 2),
-            success=success,
+            success=status_ok and latency_ok,
+            error=error,
         )
     except requests.RequestException as exc:
         latency_ms = (time.perf_counter() - start) * 1000
