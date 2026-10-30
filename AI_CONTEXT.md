@@ -70,7 +70,18 @@ give us "room for testing," which led to this plan.
 show red/failing for as long as the canary target is active. This is expected and temporary -
 don't "fix" it by changing the badge or the workflow; just finish the test and revert the config.
 
-**Exact state as of this writing (so you can tell what's already done vs. not):**
+**CURRENT STATE (updated 2026-10-30):**
+- Step 1 done. Step 2 done: the local dry-run showed the canary failing with a real DNS error
+  (`NameResolutionError`), the other 3 targets OK, and exit code 1.
+- Step 3 done: the canary config is pushed to `main` (commit `e0ea2e1`, `config.yaml` blob
+  `8b90e4c`). **THE CANARY IS LIVE ON GITHUB. It must be reverted (step 6) and the test issues
+  closed (step 7). Do not leave it in place.**
+- Step 4 pending: waiting for a workflow run (the user clicks "Run workflow", or the 30-minute
+  cron fires).
+- Steps 5 to 8 not done.
+- **Resume point:** check the workflow runs and the issues (step 5).
+
+**SUPERSEDED: original state when this plan was written (kept for history only):**
 - Local `config.yaml` in the working copy on this machine already has the canary target added
   (step 1 done, locally only).
 - Step 2 (local dry-run verification) was **started but interrupted before completing** - a
