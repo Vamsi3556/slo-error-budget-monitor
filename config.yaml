@@ -29,17 +29,6 @@ targets:
     max_latency_ms: 3000
     slo_target_pct: 99.9
 
-  # TEMPORARY - deliberately-unreachable canary target (uses the reserved .invalid TLD,
-  # RFC 2606, which never resolves). Used once to verify the incident and error-budget-warning
-  # issue-filing paths actually work against the real GitHub API, not just mocked unit tests.
-  # Remove this target once that's confirmed.
-  - name: canary-guaranteed-failure
-    url: https://canary-guaranteed-failure.invalid/health
-    method: GET
-    expected_status: [200]
-    max_latency_ms: 3000
-    slo_target_pct: 99.9
-
 window_days: 7
 warn_threshold_pct: 50
 history_file: data/history.json
