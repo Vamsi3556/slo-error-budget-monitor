@@ -19,8 +19,8 @@ for `Vamsi3556`'s GitHub profile README (see the sibling `Upskill/` workspace fo
 
 Status as of last session: fully built, tested locally (ruff/pytest/Bandit/pip-audit all clean),
 pushed to https://github.com/Vamsi3556/slo-error-budget-monitor, CI green on GitHub, both
-workflows (`ci.yml`, `monitor.yml`) live. `monitor.yml` runs every 30 minutes via cron and
-commits `data/history.json` back to the repo automatically.
+workflows (`ci.yml`, `monitor.yml`) live. `monitor.yml` runs via cron and commits
+`data/history.json` back to the repo automatically.
 
 ## IN PROGRESS — chaos test of the incident/warning pipeline
 
@@ -73,28 +73,27 @@ don't "fix" it by changing the badge or the workflow; just finish the test and r
 **CURRENT STATE (updated 2026-10-30):**
 - Step 1 done. Step 2 done: the local dry-run showed the canary failing with a real DNS error
   (`NameResolutionError`), the other 3 targets OK, and exit code 1.
-- Step 3 done: the canary config is pushed to `main` (commit `e0ea2e1`, `config.yaml` blob
-  `8b90e4c`). **THE CANARY IS LIVE ON GITHUB. It must be reverted (step 6) and the test issues
-  closed (step 7). Do not leave it in place.**
-- Step 4 pending: waiting for a workflow run (the user clicks "Run workflow", or the 30-minute
-  cron fires).
-- Steps 5 to 8 not done.
-- **Resume point:** check the workflow runs and the issues (step 5).
-
-**SUPERSEDED: original state when this plan was written (kept for history only):**
-- Local `config.yaml` in the working copy on this machine already has the canary target added
-  (step 1 done, locally only).
-- Step 2 (local dry-run verification) was **started but interrupted before completing** - a
-  venv was being created and dependencies installed; the actual verification run had not
-  produced output yet. Treat step 2 as NOT done - redo it from scratch rather than assuming a
-  partial venv is usable.
-- The canary target has **NOT** been pushed to GitHub yet - the live `config.yaml` on
-  `main` (as of this writing, blob sha `1a0c7ae7d92be0c0586fe6cf3b35b620d9c73704`) still has only
-  the original 3 targets. Steps 3-8 are all NOT done yet.
-- No workflow run has been triggered for this test yet.
-
-**Resume point:** start again from step 2 (local verification), assuming nothing beyond the
-local config.yaml edit exists yet.
+- Step 3 done: the canary config was pushed to `main` (commit `e0ea2e1`).
+- Step 4 done: the user started a manual run of `monitor.yml` from the Actions tab.
+- Step 5 done and PASSED: the run ended red as designed and filed issue #8 ("Incident:
+  canary-guaranteed-failure check failed") and issue #9 ("Error budget warning:
+  canary-guaranteed-failure") in the same run, with the correct labels, target URL, DNS error
+  text, postmortem template and metrics (0% uptime over 1 check). The incident and warning
+  paths are now proven against the real GitHub API.
+- Step 6 done: the canary was removed from `config.yaml` (commit `f314944`). The file is
+  byte-identical to the original 3-target version (same blob SHA `1a0c7ae`).
+- **Step 7 PENDING: issues #8 and #9 are still OPEN.** The PAT in `mcp.json` lacks the "Issues:
+  Read and write" permission, so commenting and closing fail with HTTP 403. Either the user adds
+  that permission, or closes both by hand with a note that they were a deliberate chaos test.
+- Step 8 pending: confirm the next run is green after the revert.
+- **Unrelated finding (real, not part of the test):** issues #6 and #7 (an incident and a
+  warning for `github-api`, filed 2026-10-30 15:46 UTC) are genuine. `data/history.json` shows
+  HTTP 403 with no network error. Most likely cause, NOT confirmed: the unauthenticated check of
+  api.github.com hit GitHub's anonymous rate limit, which is shared by runners on the same IP.
+  That would be a false positive caused by my target choice. The checker does not record the
+  response body, and a wrong status is reported only as "response did not meet expected
+  status/latency", which made it hard to diagnose.
+- **Resume point:** step 7, then step 8, then discuss the `github-api` false positive.
 
 ## Key decisions and rationale (carried over / established in this repo)
 
@@ -114,7 +113,14 @@ local config.yaml edit exists yet.
 
 ## Open items / next actions (backlog)
 
-- [ ] Finish the chaos test above (steps 2-8) - this is the immediate next task.
+- [ ] Finish the chaos test: close issues #8 and #9 (step 7) and confirm a green run (step 8).
+- [ ] Decide how to fix the `github-api` false positive (issues #6 and #7). Options: point the
+      check at a target without the anonymous rate limit (for example the githubstatus.com API),
+      or send the workflow's `GITHUB_TOKEN` with that one request. Also make a wrong status
+      say so in the issue (for example "unexpected status 403, expected [200]") by filling the
+      `error` field. Raise with the user before changing targets.
+- [ ] Five Dependabot PRs (#1 to #5) are open and untouched, including bumps of the GitHub
+      Actions versions (which also clears the Node 20 deprecation warning on runs).
 - [ ] After that's closed out, consider whether a *permanent* lightweight canary/synthetic test
       is worth keeping (e.g. a scheduled, separate "pipeline self-test" that doesn't affect the
       real uptime numbers) - not yet decided, raise with the user before adding one.
