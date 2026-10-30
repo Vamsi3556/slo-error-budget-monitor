@@ -1,0 +1,35 @@
+# SLO & Error Budget Monitor configuration
+#
+# targets: public APIs being synthetically checked (no auth required by design,
+#          so no credentials are needed to monitor them)
+# window_days: rolling window used to compute uptime % and error-budget burn
+# warn_threshold_pct: error-budget consumption % at which a proactive warning issue is filed
+# history_file: append-only JSON file the workflow commits back after each run
+# max_history_records: hard cap so the history file doesn't grow unbounded over time
+
+targets:
+  - name: github-api
+    url: https://api.github.com
+    method: GET
+    expected_status: [200]
+    max_latency_ms: 3000
+    slo_target_pct: 99.9
+
+  - name: open-meteo-weather-api
+    url: https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true
+    method: GET
+    expected_status: [200]
+    max_latency_ms: 3000
+    slo_target_pct: 99.9
+
+  - name: jsonplaceholder-api
+    url: https://jsonplaceholder.typicode.com/posts/1
+    method: GET
+    expected_status: [200]
+    max_latency_ms: 3000
+    slo_target_pct: 99.9
+
+window_days: 7
+warn_threshold_pct: 50
+history_file: data/history.json
+max_history_records: 5000
