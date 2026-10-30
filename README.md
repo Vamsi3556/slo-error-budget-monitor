@@ -47,9 +47,10 @@ GitHub Actions (cron, every 30 min)
         └─ budget recovered?              ──► close the open warning issue with a summary
 ```
 
-Monitored targets are public, no-auth APIs by design (see `config.yaml`) so the tool itself
-needs zero stored credentials for the services it watches. Swap in your own internal endpoints
-and it works the same way.
+Monitored targets are public APIs by design (see `config.yaml`), so the tool needs no stored
+credentials for the services it watches. The one exception is optional: the `github-api` check
+sends the workflow's own built-in `GITHUB_TOKEN` to stay clear of anonymous rate limits. Swap in
+your own internal endpoints and it works the same way.
 
 ## Security practices
 
@@ -66,6 +67,14 @@ and it works the same way.
 - **CodeQL** runs GitHub's semantic security analysis on every push.
 - **Dependabot** keeps both the GitHub Actions versions and Python dependencies patched
   automatically (`.github/dependabot.yml`).
+- **Tokens stay in the environment.** A target can set `bearer_token_env: NAME` to send a bearer
+  token read from that environment variable. The config file never holds the token, and it is
+  only ever sent over https. The `github-api` target uses this with the workflow's built-in
+  `GITHUB_TOKEN`, because anonymous requests to api.github.com share a rate limit and can be
+  refused with a 403.
+- **Failures say why.** A failed check records the reason (for example `unexpected status 403,
+  expected one of [200]` or the latency that exceeded the limit), so the incident issue is
+  actionable without digging through run logs.
 
 ## Project layout
 
@@ -122,6 +131,10 @@ targets:
 window_days: 7            # rolling window for uptime / error-budget calculations
 warn_threshold_pct: 50    # % of error budget consumed before a warning issue is filed
 ```
+
+Add `bearer_token_env: MY_API_TOKEN` to a target to authenticate it with a token from the
+environment (in GitHub Actions, map a repository secret to that variable in `monitor.yml`).
+If the variable is not set, the check runs unauthenticated.
 
 ## License
 
