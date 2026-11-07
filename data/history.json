@@ -925,5 +925,32 @@
     "latency_ms": 119.9,
     "success": true,
     "error": null
+  },
+  {
+    "target": "github-api",
+    "url": "https://api.github.com",
+    "timestamp": "2026-11-07T16:47:52.144643+00:00",
+    "status_code": 200,
+    "latency_ms": 194.07,
+    "success": true,
+    "error": null
+  },
+  {
+    "target": "open-meteo-weather-api",
+    "url": "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true",
+    "timestamp": "2026-11-07T16:47:52.483690+00:00",
+    "status_code": 200,
+    "latency_ms": 338.18,
+    "success": true,
+    "error": null
+  },
+  {
+    "target": "jsonplaceholder-api",
+    "url": "https://jsonplaceholder.typicode.com/posts/1",
+    "timestamp": "2026-11-07T16:47:52.551363+00:00",
+    "status_code": 200,
+    "latency_ms": 66.81,
+    "success": true,
+    "error": null
   }
 ]
